@@ -1,0 +1,26 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #111827; color: #f9fafb; }
+.app { min-height: 100vh; padding: 18px; display: flex; justify-content: center; align-items: flex-start; }
+.card { width: 100%; max-width: 520px; background: #1f2937; border: 1px solid #374151; border-radius: 26px; padding: 22px; box-shadow: 0 20px 50px rgba(0,0,0,.35); }
+.hero { text-align: center; margin-bottom: 22px; }
+.emoji { font-size: 46px; }
+h1 { margin: 8px 0; font-size: 28px; }
+p { color: #d1d5db; }
+.form { display: grid; gap: 12px; }
+label { font-weight: 700; margin-top: 6px; }
+input, select, textarea { width: 100%; border: 1px solid #4b5563; background: #111827; color: #f9fafb; border-radius: 16px; padding: 14px; font-size: 17px; }
+textarea { min-height: 90px; resize: vertical; }
+input[type="range"] { padding: 0; accent-color: #facc15; }
+output { justify-self: end; background: #facc15; color: #111827; font-weight: 900; padding: 6px 12px; border-radius: 999px; }
+button, .button-secondary { width: 100%; border: 0; background: #facc15; color: #111827; font-size: 18px; font-weight: 900; padding: 16px; border-radius: 18px; margin-top: 12px; text-decoration: none; display: block; text-align: center; }
+.link { display: block; color: #facc15; text-align: center; margin-top: 18px; font-weight: 700; }
+.toast { position: fixed; top: 12px; left: 16px; right: 16px; max-width: 520px; margin: auto; background: #facc15; color: #111827; padding: 12px 16px; border-radius: 16px; font-weight: 800; z-index: 10; }
+.leaderboard { display: grid; gap: 10px; }
+.row { display: grid; grid-template-columns: 48px 1fr auto; gap: 12px; align-items: center; background: #111827; border: 1px solid #374151; border-radius: 18px; padding: 14px; }
+.rank { background: #374151; border-radius: 14px; padding: 10px; text-align: center; font-weight: 900; }
+.country span { display: block; color: #9ca3af; font-size: 14px; margin-top: 4px; }
+.score { font-size: 24px; font-weight: 900; color: #facc15; }
+.reset { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 20px; }
+.reset button { width: auto; margin-top: 0; padding-inline: 18px; background: #ef4444; color: white; }
+.empty { text-align: center; }
+@media (max-width: 420px) { .card { padding: 18px; border-radius: 22px; } h1 { font-size: 24px; } .row { grid-template-columns: 42px 1fr; } .score { grid-column: 2; } }
