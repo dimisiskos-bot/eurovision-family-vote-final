@@ -1,0 +1,133 @@
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+import sqlite3
+from pathlib import Path
+from datetime import datetime
+
+APP_DIR = Path(__file__).parent
+DB_PATH = APP_DIR / "votes.db"
+
+app = Flask(__name__)
+app.secret_key = "change-this-secret-key"
+
+COUNTRIES = [
+    "Albania", "Armenia", "Australia", "Austria", "Azerbaijan",
+    "Belgium", "Croatia", "Cyprus", "Czechia", "Denmark",
+    "Estonia", "Finland", "France", "Georgia", "Germany",
+    "Greece", "Iceland", "Ireland", "Israel", "Italy",
+    "Latvia", "Lithuania", "Luxembourg", "Malta", "Moldova",
+    "Netherlands", "Norway", "Poland", "Portugal", "San Marino",
+    "Serbia", "Slovenia", "Spain", "Sweden", "Switzerland",
+    "Ukraine", "United Kingdom"
+]
+
+def get_conn():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    with get_conn() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS votes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                voter_name TEXT NOT NULL,
+                country TEXT NOT NULL,
+                song_score INTEGER NOT NULL,
+                stage_score INTEGER NOT NULL,
+                voice_score INTEGER NOT NULL,
+                impression_score INTEGER NOT NULL,
+                comment TEXT,
+                created_at TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+
+@app.before_request
+def before_request():
+    init_db()
+
+@app.route("/", methods=["GET", "POST"])
+def vote():
+    if request.method == "POST":
+        voter_name = request.form.get("voter_name", "").strip()
+        country = request.form.get("country", "").strip()
+        comment = request.form.get("comment", "").strip()
+
+        try:
+            song_score = int(request.form.get("song_score", "0"))
+            stage_score = int(request.form.get("stage_score", "0"))
+            voice_score = int(request.form.get("voice_score", "0"))
+            impression_score = int(request.form.get("impression_score", "0"))
+        except ValueError:
+            flash("Λάθος βαθμολογία.")
+            return redirect(url_for("vote"))
+
+        if not voter_name or country not in COUNTRIES:
+            flash("Συμπλήρωσε όνομα και χώρα.")
+            return redirect(url_for("vote"))
+
+        if any(s < 1 or s > 10 for s in [song_score, stage_score, voice_score, impression_score]):
+            flash("Οι βαθμολογίες πρέπει να είναι από 1 έως 10.")
+            return redirect(url_for("vote"))
+
+        with get_conn() as conn:
+            conn.execute("""
+                INSERT INTO votes
+                (voter_name, country, song_score, stage_score, voice_score, impression_score, comment, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (voter_name, country, song_score, stage_score, voice_score, impression_score, comment,
+                  datetime.now().isoformat(timespec="seconds")))
+            conn.commit()
+
+        flash("Η ψήφος καταχωρήθηκε!")
+        return redirect(url_for("results"))
+
+    return render_template("vote.html", countries=COUNTRIES)
+
+@app.route("/results")
+def results():
+    with get_conn() as conn:
+        leaderboard = conn.execute("""
+            SELECT
+                country,
+                COUNT(*) AS votes,
+                SUM(song_score + stage_score + voice_score + impression_score) AS total_score,
+                ROUND(AVG(song_score + stage_score + voice_score + impression_score), 2) AS avg_score
+            FROM votes
+            GROUP BY country
+            ORDER BY total_score DESC, avg_score DESC, votes DESC
+        """).fetchall()
+        total_votes = conn.execute("SELECT COUNT(*) AS c FROM votes").fetchone()["c"]
+
+    return render_template("results.html", leaderboard=leaderboard, total_votes=total_votes)
+
+@app.route("/api/results")
+def api_results():
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT country,
+                   COUNT(*) AS votes,
+                   SUM(song_score + stage_score + voice_score + impression_score) AS total_score,
+                   ROUND(AVG(song_score + stage_score + voice_score + impression_score), 2) AS avg_score
+            FROM votes
+            GROUP BY country
+            ORDER BY total_score DESC
+        """).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+@app.route("/reset", methods=["POST"])
+def reset():
+    if request.form.get("password", "") != "family2026":
+        flash("Λάθος κωδικός reset.")
+        return redirect(url_for("results"))
+
+    with get_conn() as conn:
+        conn.execute("DELETE FROM votes")
+        conn.commit()
+
+    flash("Τα αποτελέσματα μηδενίστηκαν.")
+    return redirect(url_for("results"))
+
+if __name__ == "__main__":
+    init_db()
+    app.run(host="0.0.0.0", port=5000, debug=True)
